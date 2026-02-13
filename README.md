@@ -1,2 +1,2 @@
 # Open-source-solution
-Ohjelmistokoodit joita on käytetty Avoimen lähdekoodin ratkaisun hyödyntäminen fysiologisissa mittauksissa ja katseenseurannassa, opinnäytetyössä 
+Ohjelmistokoodit joita on käytetty avoimen lähdekoodin ratkaisun hyödyntäminen fysiologisissa mittauksissa ja katseenseurannassa, opinnäytetyössä.
