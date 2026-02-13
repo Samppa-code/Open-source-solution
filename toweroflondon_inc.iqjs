@@ -1,0 +1,1208 @@
+<userManual>
+___________________________________________________________________________________________________________________
+
+				Tower of London Task (TOL) -- Krikorian et al. (1994) Version
+___________________________________________________________________________________________________________________
+
+Script Author: David Nitz (dave@millisecond.com), Millisecond
+Last Updated:  11-20-2025 by K. Borchert (katjab@millisecond.com), Millisecond
+
+Script Copyright © 11-20-2025 Millisecond Software, LLC
+
+___________________________________________________________________________________________________________________
+BACKGROUND INFO 
+___________________________________________________________________________________________________________________
+This script implements the 'Tower of London' task (originally Shallice, 1982), an assessment of 
+executive functioning with a focus on planning abilities.
+
+___________________________________________________________________________________________________________________
+REFERENCES
+___________________________________________________________________________________________________________________
+
+Shallice, T. (1982). Specifc impairments of planning. Philosophical Transactions of the Royal 
+Society of London, Biology, 298, 199-209.
+
+Krikorian, R., Bartok, J., & Gay, N. (1994). Tower of London procedure: A standard method 
+and developmental data. Journal of Clinical and Experimental Neuropsychology, 16, 840-850.
+
+Anderson, P., Anderson, V., & Lajoie, G. (1996). The Tower of London test: Validation and 
+standardization for pediatric populations. The Clinical Neuropsychologist, 10, 54-65.
+
+Berg, W. K. & Byrd, D. L. (2002). The Tower of London spatial problem-solving task:
+Enhancing clinical and research implementation. Journal of Clinical and Experimental 
+Neuropsychology, 24(5), 586-604.
+ 
+___________________________________________________________________________________________________________________
+TASK DESCRIPTION
+___________________________________________________________________________________________________________________
+Participants are asked to arrange three colorful discs on 3 provided pegs 
+in a specific solution pattern in as few moves as possible.
+They work through one practice problem before moving on to 12 test problems.
+
+___________________________________________________________________________________________________________________
+DURATION 
+___________________________________________________________________________________________________________________
+10 minutes
+
+___________________________________________________________________________________________________________________
+DATA OUTPUT DICTIONARY
+___________________________________________________________________________________________________________________ 
+
+(1) Raw data file: 'toweroflondon_raw*.iqdat'
+
+build:						The specific Inquisit version used (the 'build') that was run
+computer.platform:			the platform the script was run on (win/mac/ios/android)
+computer.touch:				0 = device has no touchscreen capabilities; 1 = device has touchscreen capabilities
+computer.hasKeyboard:		0 = no external keyboard detected; 1 = external keyboard detected
+date:						date script was run 
+time: 						(local) time script was run 
+subject:					with the current subject id
+group: 						with the current group id
+session:					with the current session id
+blockcode:					the name the current block (built-in Inquisit variable) 
+blocknum:					the number of the current block (built-in Inquisit variable)
+trialcode: 					the name of the currently recorded trial (built-in Inquisit variable)
+trialnum: 					the number of the currently recorded trial (built-in Inquisit variable)
+								Note: trialnum is a built-in Inquisit variable; it counts all trials run;  
+								even those that do not store data to the data file.
+
+response:						response made (contains the last peg a disc was moved to or 0 for noResponse)
+latency:						the latency of the response in ms (or if no response: trialduration)
+
+trial.choice.lastDropLatency:	time (in ms) between intialization of the last move and its completion; move execution time
+trial.choice.lastDropSource:	the last moved disc (R, B, G)
+trial.choice.lastDropTarget:	the last peg that a disc was moved to (apeg, bpeg, cpeg)
+
+
+problemNumber:					Current problem number. By default the task consists of 1 practice
+								problem and 12 test problems presented sequentially. 0 indicates 
+								a practice problem.
+
+subjectAttempts:				Number of current attempts to solve the given problem.
+targetMoves:					Number of prescribed moves for the current problem.
+subjectMoves:					Number of subject-performed moves for the current problem.
+
+excessMoves:					Returns the difference between number of moves performed by the subject and the 
+								number of target moves for a given problem.
+
+moveString:						Text string containing a record of performed moves. E.g. "B2R3"
+								indicates that the blue ball (B) was moved to peg 2 (center) and 
+								the red ball (R) was moved to peg 3 (right).
+
+targetAchieved:					Returns true as soon as the subject has successfully reached a given
+								problem's target / goal state. Otherwise false.
+
+problemScore:					Score awarded for solving the current problem. See Krikorian et
+								al. (1994) for details.
+
+totalScore:						Score achieved across the whole set of test problems. Computed
+								as the sum of individual problem scores. Maximum is 36 in the 
+								standard version.
+
+firstMoveTime:					Returns the time (in ms) elapsed between initial presentation of 
+								the target configuration and the initialization of the subject's first
+								move. Sometimes also referred to as "planning time" or simply
+								"latency". Note: Measure is computed separately for each attempt.
+
+executionTime:					Computed as solutionTime - firstMoveTime. Note: Measure is 
+								computed separately for each attempt.
+
+solutionTime:					Returns the time (in ms) elapsed between initial presentation of
+								the target configuration and a subject's successful solution.
+								Note: Measure is computed separately for each attempt.
+
+planningTime:					planning time calculated as 'solutionTime - executionTime'
+
+
+tChoiceStart:					Absolute start time for trial.choice in ms. May be used to derive
+								additional measures during data analysis (e.g. mean move time).
+
+tChoiceEnd:						Absolute end time for trial.choice in ms. May be used to derive
+								additional measures during data analysis (e.g. mean move time).
+
+tFirstMove:						Absolute script timestamp in ms for valid first move 
+
+
+ruleViolation:					1 = illegal move: at least one of the two moving rules was violated during this trial
+								0 = legal move
+
+countRule1Violations:			sums up the number of times that Rule1 has been violated (Rule1="move only the top balls") 
+countRule2Violations:			sums up the number of times that Rule2 has been violated (Rule2="don't move ball onto the position of another ball")
+countRuleViolations:			number of all rule violations
+
+countFailedAttempts:			sums up the number of failed attempts across all problems
+								failedAttempts: voluntary resets + pressing continue without solving the problem + too many moves
+
+(2) Summary data file: 'toweroflondon_summary*.iqdat'
+
+inquisit.version:			Inquisit version run
+computer.platform:			the platform the script was run on (win/mac/ios/android)
+computer.touch:				0 = device has no touchscreen capabilities; 1 = device has touchscreen capabilities
+computer.hasKeyboard:		0 = no external keyboard detected; 1 = external keyboard detected
+startdate:					date script was run
+starttime:					time script was started
+subjectid:					assigned subject id number
+groupid:					assigned group id number
+sessionid:					assigned session id number
+elapsedtime:				time it took to run script (in ms); measured from onset to offset of script
+completed:					0 = script was not completed (prematurely aborted); 
+							1 = script was completed (all conditions run)
+
+totalScore:					Score achieved across the whole set of test problems. 
+							Computed as the sum of individual problem scores. Maximum is 36 in the standard version.
+
+meanSolutionTime:				the mean solution time (in ms) of all solutions with solutionTime > 0 (independent of accuracy of solution)
+sdSolutionTime:					the standard deviation (in ms) of solution times of solutions with solutionTime > 0 (independent of accuracy of solution)
+meanExecutionTime:				the mean execution time (in ms) of all solutions with solutionTime > 0 (independent of accuracy of solution)
+sdExecutionTime:				the standard deviation (in ms) of all execution times of all completed solutions with solutionTime > 0 (independent of accuracy of solution)
+meanPlanningTime:				the mean time (in ms) spent on planning; calculated as (meanSolutionTime-meanExecutionTime) with solutionTime > 0 (independent of accuracy of solution)
+
+meanSolutionTimeCorrectSolutions:	the mean solution time (in ms) of all solutions with problemScore > 0
+sdSolutionTimeCorrectSolutions:		the standard deviation (in ms) of solution times of solutions problemScore > 0
+meanExecutionTimeCorrectSolutions:	the mean execution time (in ms) of all solutions with problemScore > 0
+sdExecutionTimeCorrectSolutions:	the standard deviation (in ms) of all execution times of all completed solutions with problemScore > 0
+meanPlanningTimeCorrectSolution:	the mean time (in ms) spent on planning of all completed solutions with problemScore > 0
+
+countRule1Violations:			sums up the number of times that Rule1 has been violated across all problems (Rule1="move only the top balls") 
+countRule2Violations:			sums up the number of times that Rule2 has been violated across all problems (Rule2="don't move ball onto the position of another ball")
+countRuleViolations:			number of all rule violations across all problems
+
+countFailedAttempts:			sums up the number of failed attempts across all problems
+								failedAttempt: voluntary resets + pressing continue without solving the problem + too many moves
+
+___________________________________________________________________________________________________________________
+EXPERIMENTAL SET-UP 
+___________________________________________________________________________________________________________________
+1 Practice trial (problem with 2 moves)
+12 Test trials (2 problems with 2 moves, 2 problems with 3 moves, 4 problems with 4 moves, 4 problems with 5 moves: 
+tested sequentially in fixed order)
+
+Per Problem:
+* no time limit
+* reset button provided
+* 3 attempts per problem to solve it given the max. number of moves. After failure to solve a problem in 3 attempts,
+participants are moved to the next problem in the sequence (participants can also move ahead to the next problem
+by clicking a 'next' button)
+
+___________________________________________________________________________________________________________________
+STIMULI
+___________________________________________________________________________________________________________________
+see section Editable Stimuli
+(to re-create new target states, try EmptyPegs.pptx - provided by Millisecond)
+
+___________________________________________________________________________________________________________________
+INSTRUCTIONS 
+___________________________________________________________________________________________________________________
+The task instructions were adapted from Anderson et al (1996).
+See script 'toweroflondong_instructions_inc.iqjs'
+
+___________________________________________________________________________________________________________________
+EDITABLE CODE 
+___________________________________________________________________________________________________________________
+
+//Design:
+/ maxAttempts = 3				Allowed number of attempts to solve any given problem with
+								minimum amount of moves. Default is 3.
+
+/ nPracticeProblems = 1			Number of practice problems. By default, the task contains 1
+								practice problem and 12 test problems. Default is 1.
+
+//Peg setup:
+/ nASlots = 3					Capacity of peg 1 (left). Default is 3.
+/ nBSlots = 2					Capacity of peg 2 (center). Default is 2.
+/ nCSlots = 1					Capacity of peg 3 (right). Default is 1.
+
+/ h1 = 20%						Horizontal coordinates of peg 1 (left) in screen percentages  (0% = left edge of canvas - right edge of canvas = 100%)
+/ h2 = 50%						Horizontal coordinates of peg 2 (center) in screen percentages
+/ h3 = 80%						Horizontal coordinates of peg 3 (right) in screen percentages
+/ v1 = 80%						Vertical coordinate of bottom ball position in screen percentages (0% = top of canvas - bottom of canvas = 100%)
+/ v2 = 65%						Vertical coordinate of center ball position in screen percentages
+/ v3 = 50%						Vertical coordinate of top ball position in screen percentages
+
+/ rStartX = parameters.h1		Determines the red ball's horizontal start position (horizontal, vertical).
+/ rStartY = parameters.v2		Determines the red ball's vertical start position
+/ gStartX = parameters.h1		Determines the green ball's horizontal start position
+/ gStartY = parameters.v1		Determines the green ball's vertical start position
+/ bStartX = parameters.h2		Determines the blue ball's horizontal start position
+/ bStartY = parameters.v1		Determines the blue ball's vertical start position
+
+//UI parameter
+/ showNextButton = true			true = show the 'next' button; false = 'next' button is not presented
+/ showresetButton = true		true = a reset button is provided; false = no reset button is provided
+
+//timing parameters
+/ interTrialInterval = 1000		The intertrial interval (time between problems) in ms. Default is 1000.
+/ feedbackDuration = 2000		Duration of performance feedback in ms. Default is 2000.
+
+</userManual>
+
+
+**************************************************************************************************************
+**************************************************************************************************************
+	EDITABLE PARAMETERS: change editable parameters here
+**************************************************************************************************************
+**************************************************************************************************************
+
+<parameters>
+//Design:
+/ maxAttempts = 3				//Allowed number of attempts to solve any given problem with
+								//minimum amount of moves. Default is 3.
+
+/ nPracticeProblems = 1			//Number of practice problems. By default, the task contains 1
+								//practice problem and 12 test problems. Default is 1.
+
+//Peg setup:
+/ nASlots = 3					//Capacity of peg 1 (left). Default is 3.
+/ nBSlots = 2					//Capacity of peg 2 (center). Default is 2.
+/ nCSlots = 1					//Capacity of peg 3 (right). Default is 1.
+
+/ h1 = 20%						//Horizontal coordinates of peg 1 (left) in screen percentages  (0% = left edge of canvas - right edge of canvas = 100%)
+/ h2 = 50%						//Horizontal coordinates of peg 2 (center) in screen percentages
+/ h3 = 80%						//Horizontal coordinates of peg 3 (right) in screen percentages
+/ v1 = 80%						//Vertical coordinate of bottom ball position in screen percentages (0% = top of canvas - bottom of canvas = 100%)
+/ v2 = 65%						//Vertical coordinate of center ball position in screen percentages
+/ v3 = 50%						//Vertical coordinate of top ball position in screen percentages
+
+/ rStartX = parameters.h1		//Determines the red ball's horizontal start position (horizontal, vertical).
+/ rStartY = parameters.v2		//Determines the red ball's vertical start position
+/ gStartX = parameters.h1		//Determines the green ball's horizontal start position
+/ gStartY = parameters.v1		//Determines the green ball's vertical start position
+/ bStartX = parameters.h2		//Determines the blue ball's horizontal start position
+/ bStartY = parameters.v1		//Determines the blue ball's vertical start position
+
+//UI parameter
+/ showNextButton = true			//true = show the 'next' button; false = 'next' button is not presented
+/ showresetButton = true		//true = a reset button is provided; false = no reset button is provided
+
+//timing parameters
+/ interTrialInterval = 1000		//The intertrial interval (time between problems) in ms. Default is 1000.
+/ feedbackDuration = 2000		//Duration of performance feedback in ms. Default is 2000.
+</parameters>
+
+**************************************************************************************************************
+**************************************************************************************************************
+	EDITABLE STIMULI: change editable stimuli here
+**************************************************************************************************************
+**************************************************************************************************************
+<item targetstateItems>
+/ 01 = "problem00.png"
+/ 02 = "problem01.png"
+/ 03 = "problem02.png"
+/ 04 = "problem03.png"
+/ 05 = "problem04.png"
+/ 06 = "problem05.png"
+/ 07 = "problem06.png"
+/ 08 = "problem07.png"
+/ 09 = "problem08.png"
+/ 10 = "problem09.png"
+/ 11 = "problem10.png"
+/ 12 = "problem11.png"
+/ 13 = "problem12.png"
+</item>
+Note: if the problem pics are changed, the lists under section 'Editable Lists' might also need to be edited
+
+<item pegs>
+/ 1 = "n1peg.png"
+/ 2 = "n2peg.png"
+/ 3 = "n3peg.png"
+</item>
+
+**************************************************************************************************************
+**************************************************************************************************************
+	EDITABLE Lists: change problem sets here
+**************************************************************************************************************
+**************************************************************************************************************
+
+**************************************************************************************************************
+	Shallice (1982) Problem Set (1 Practice Item, 12 Test Items)
+**************************************************************************************************************
+	Problem Number (Ordinal)
+	Note: Problem #0 indicates practice item.
+
+
+<list problemNumber>
+/ items = (0,1,2,3,4,5,6,7,8,9,10,11,12)
+/ selectionMode = sequence
+/ resetInterval = 0
+</list>
+
+**************************************************************************************************************
+	Number of Target Moves
+**************************************************************************************************************
+
+<list targetMoves>
+/ items = (2,2,2,3,3,4,4,4,4,5,5,5,5)
+/ selectionMode = list.problemNumber.currentIndex
+</list>
+
+**************************************************************************************************************
+	Red Ball: the end positions of the red ball for all 12 pics
+**************************************************************************************************************
+
+x lists contain the horizonal positions of each ball (which pegs the ball should end up on)
+y lists contain the vertical positions of each ball (bottom, center, top)
+
+h = horizontal position of ball => 1 (left peg), 2 (center peg), 3 (right peg = shortest)
+v = vertical position of ball= > 1 (bottom ball), 2 (center ball), 3 (top ball)
+
+<list rTargetX>
+/ items = (parameters.h3,parameters.h3,parameters.h2,parameters.h2,parameters.h2,parameters.h1,
+	parameters.h2,parameters.h1,parameters.h2,parameters.h1,parameters.h1,parameters.h2,parameters.h2)
+/ selectionMode = list.problemNumber.currentIndex
+</list>
+
+<list rTargetY>
+/ items = (parameters.v1,parameters.v1,parameters.v1,parameters.v1,parameters.v1,parameters.v1,
+	parameters.v1,parameters.v1,parameters.v1,parameters.v1,parameters.v1,parameters.v1,parameters.v1)
+/ selectionMode = list.problemNumber.currentIndex
+</list>
+
+**************************************************************************************************************
+	Green Ball: the end positions of the green ball for all 12 pics
+**************************************************************************************************************
+
+<list gTargetX>
+/ items = (parameters.h1,parameters.h2,parameters.h1,parameters.h1,parameters.h1,parameters.h1,
+	parameters.h2,parameters.h3,parameters.h3,parameters.h1,parameters.h1,parameters.h1,parameters.h3)
+/ selectionMode = list.problemNumber.currentIndex
+</list>
+
+<list gTargetY>
+/ items = (parameters.v1,parameters.v2,parameters.v1,parameters.v1,parameters.v1,parameters.v2,
+	parameters.v2,parameters.v1,parameters.v1,parameters.v2,parameters.v3,parameters.v2,parameters.v1)
+/ selectionMode = list.problemNumber.currentIndex
+</list>
+
+**************************************************************************************************************
+	Blue Ball: the end position of the blue ball for all 12 pics
+**************************************************************************************************************
+
+<list bTargetX>
+/ items = (parameters.h1,parameters.h2,parameters.h3,parameters.h1,parameters.h2,parameters.h2,
+	parameters.h1,parameters.h1,parameters.h2,parameters.h1,parameters.h1,parameters.h1,parameters.h1)
+/ selectionMode = list.problemNumber.currentIndex
+</list>
+
+<list bTargetY>
+/ items = (parameters.v2,parameters.v1,parameters.v1,parameters.v2,parameters.v2,parameters.v1,
+	parameters.v1,parameters.v2,parameters.v2,parameters.v3,parameters.v2,parameters.v1,parameters.v1)
+/ selectionMode = list.problemNumber.currentIndex
+</list>
+
+**************************************************************************************************************
+				!!!REMAINING CODE: Customize after careful consideration only!!!
+**************************************************************************************************************
+
+
+**************************************************************************************************************
+**************************************************************************************************************
+	DEFAULTS
+**************************************************************************************************************
+**************************************************************************************************************
+script requires Inquisit "7.0.8.0" or higher
+
+<defaults>
+/ canvasSize = (100%, 100%)
+/ canvasAspectRatio = (4,3)
+/ minimumVersion = "7.0.8.0"
+/ inputDevice = mouse
+/ screenColor = black
+/ fontStyle = ("Arial", 2.50%, true)
+/ txColor = white
+/ txBGColor = black
+</defaults>
+<port lsl_start>
+/  port = lsl
+/ items = (10)
+</port>
+<port lsl_end>
+/  port = lsl
+/ items = (20)
+</port>
+
+
+
+**************************************************************************************************************
+**************************************************************************************************************
+	DATA
+**************************************************************************************************************
+**************************************************************************************************************
+
+Note: data file explanations under User Manual Information at the top
+
+***********************************
+raw data file
+***********************************
+
+<data>
+/ columns = (
+build, computer.platform, date, time, subject, group, session, 
+blockCode, blockNum, trialCode, trialNum, latency,response, trial.choice.lastDropLatency,
+trial.choice.lastDropSource, trial.choice.lastDropTarget,
+values.problemNumber,values.subjectAttempts,values.targetMoves,values.subjectMoves,
+expressions.excessMoves,values.moveString,expressions.targetAchieved,values.problemScore,
+values.totalScore,expressions.firstMoveTime,expressions.executionTime,
+expressions.solutionTime,expressions.planningTime, values.tChoiceStart,values.tChoiceEnd, values.tFirstMove,
+values.ruleViolation, values.countRule1Violations, values.countRule2Violations, expressions.countRuleViolations,
+values.countFailedAttempts)
+</data>
+
+***********************************
+summary data file
+***********************************
+
+<summaryData>
+/ columns = (inquisit.version, computer.platform, script.startDate, script.startTime, script.subjectId, script.groupId, script.sessionId, 
+script.elapsedTime, script.completed, 
+values.totalScore,
+expressions.meanSolutionTime, expressions.sdSolutionTime,
+expressions.meanExecutionTime, expressions.sdExecutionTime,
+expressions.meanPlanningTime,
+expressions.meanSolutionTimeCorrectSolutions, expressions.sdSolutionTimeCorrectSolutions,
+expressions.meanExecutionTimeCorrectSolutions, expressions.sdExecutionTimeCorrectSolutions,
+expressions.meanPlanningTimeCorrectSolution,
+values.countRule1Violations, values.countRule2Violations, expressions.countRuleViolations, 
+values.countFailedAttempts)
+</summaryData>
+
+**************************************************************************************************************
+**************************************************************************************************************
+	VALUES: automatically updated
+**************************************************************************************************************
+**************************************************************************************************************
+                                    
+	r_currentX, r_currentY			Stores the red ball's current position (horizontal, vertical).
+	g_currentX, g_currentY			Stores the green ball's current position (horizontal, vertical).
+	b_currentX, b_currentY			Stores the blue ball's current position (horizontal, vertical).
+	r_targetX, r_targetY			Stores the red ball's target position (horizontal, vertical).
+	g_targetX, g_targetY			Stores the green ball's target position (horizontal, vertical).
+	b_targetX, b_targetY			Stores the blue ball's target position (horizontal, vertical).
+	aCount							The number of balls currently placed on peg 1 (left).
+	bCount							The number of balls currently placed on peg 2 (center).
+	cCount							The number of balls currently placed on peg 3 (right).
+	problemNumber					Current problem number. By default the task consists of 1 practice
+									problem and 12 test problems presented sequentially. 0 indicates 
+									a practice problem.
+	targetMoves						Number of prescribed moves for the current problem.
+	subjectMoves					Number of subject-performed moves for the current problem.
+	subjectAttempts					Number of current attempts to solve the given problem.
+	problemScore					Score awarded for solving the current problem. See Krikorian et
+									al. (1994) for details.
+	totalScore						Score achieved across the whole set of test problems. Computed
+									as the sum of individual problem scores. Maximum is 36 in the 
+									standard version.
+	moveString						Text string containing a record of performed moves. E.g. "B2R3"
+									indicates that the blue ball (B) was moved to peg 2 (center) and 
+									the red ball (R) was moved to peg 3 (right).
+	stopblock						Pseudo-boolean switch to stop the current practice or test block
+									once all problems have been completed.
+	t_roundstart					Absolute start time for the current round / attempt. Used to 
+									compute first move time, solution time and execution time
+									(expressions.firstMoveTime, expressions.solutionTime, 
+									expressions.executionTime).
+	tFirstMove						Absolute time the first move was initiated for the current round /
+									attempt. Used to determine planning time.
+									(expressions.firstMoveTime).
+	tSolution						Absolute time when target state was achieved for the current 
+									round / attempt. Used to determine solution and execution time
+									(expressions.solutionTime, expressions.executionTime).
+	in								Indicates where a ball was positioned by the subject (1=left peg; 
+									2=center peg; 3=right peg). A value of 0 indicates that the 
+									subject tried to place the ball in an illegal position (e.g. full peg).
+	tChoiceStart					Absolute start time for trial.choice in ms. May be used to derive
+									additional measures during data analysis (e.g. mean move time).
+	tChoiceEnd						Absolute end time for trial.choice in ms. May be used to derive
+									additional measures during data analysis (e.g. mean move time).
+
+	completed						0 = script was not completed (prematurely aborted); 1 = script was completed (all conditions run)
+
+<values taskparams>
+/ debug1 = ""
+/ debug2 = ""
+/ debug3 = ""
+/ rCurrentX = 0
+/ rCurrentY = 0
+/ gCurrentX = 0
+/ gCurrentY = 0
+/ bCurrentX = 0
+/ bCurrentY = 0
+/ rTargetX = 0
+/ rTargetY = 0
+/ gTargetX = 0
+/ gTargetY = 0
+/ bTargetX = 0
+/ bTargetY = 0
+/ aCount = 0
+/ bCount = 0
+/ cCount = 0
+/ problemNumber = 0
+/ targetMoves = 0
+/ subjectMoves = 0
+/ subjectAttempts = 0
+/ problemScore = 0
+/ totalScore = 0
+/ moveString = ""
+/ stopBlock = 0
+/ tRoundStart = 0
+/ tFirstMove = 0
+/ tSolution = 0
+/ in = 0
+/ choiceCount = 0
+/ tChoiceStart = 0
+/ tChoiceEnd = 0
+/ ruleViolation = null
+/ countRule1Violations = 0
+/ countRule2Violations = 0
+/ rbX = 0
+/ rbY = 0
+/ gbX = 0
+/ gbY = 0
+/ bbX = 0
+/ bbY = 0
+/ aDropTarget = 0
+/ bDropTarget = 0
+/ cDropTarget = 0
+/ countFailedAttempts = 0
+</values>
+
+**************************************************************************************************************
+**************************************************************************************************************
+	EXPRESSIONS
+**************************************************************************************************************
+**************************************************************************************************************
+
+
+	availableASlots						Returns the number of free slots for peg 1 (left).
+	availableBSlots						Returns the number of free slots for peg 2 (center).
+	availableCSlots						Returns the number of free slots for peg 3 (right).
+	vmax_a								Returns the maximum vertical position (slot) currently
+										occupied for peg 1 (left). Returns 0 (false) if peg is empty.
+	vmax_b								Returns the maximum vertical position (slot) currently
+										occupied for peg 2 (center). Returns 0 (false) if peg is empty.
+	vmax_c								Returns the maximum vertical position (slot) currently
+										occupied for peg 3 (right). Returns 0 (false) if peg is empty.
+	vnext_a								Returns the next available vertical position (slot) for peg 1 (left).
+									 	Returns 0 (false) if peg is full.
+	vnext_b								Returns the next available vertical position (slot) for peg 2 (center).
+									 	Returns 0 (false) if peg is full.
+	vnextC								Returns the next available vertical position (slot) for peg 3 (right).
+									 	Returns 0 (false) if peg is full.
+	topInA								Returns the object (R,G,B) currently inhabiting the top position 
+										on peg 1 (left). Returns 'none' if peg is empty. Used to determine
+										valid responses in 'trial.choice'.
+	topInB								Returns the object (R,G,B) currently inhabiting the top position 
+										on peg 2 (center). Returns 'none' if peg is empty. Used to determine
+										valid responses in 'trial.choice'.
+	topInC 								Returns the object (R,G,B) currently inhabiting the top position 
+										on peg 3 (right). Returns 'none' if peg is empty. Used to determine
+										valid responses in 'trial.choice'.
+	firstMoveTime						Returns the time (in ms) elapsed between initial presentation of 
+										the target configuration and the initialization of the subject's first
+										move. Sometimes also referred to as "planning time" or simply
+										"latency". Note: Measure is computed separately for each attempt.
+	solutionTime						Returns the time (in ms) elapsed between initial presentation of
+										the target configuration and a subject's successful solution.
+										Note: Measure is computed separately for each attempt.
+	executionTime						Computed as solutionTime - firstMoveTime. Note: Measure is 
+										computed separately for each attempt.
+	excessMoves							Returns the difference between number of moves performed by
+										the subject and the number of target moves for a given problem.
+	targetAchieved						Returns true as soon as the subject has successfully reached a given
+										problem's target / goal state. Otherwise false.
+
+
+Note: the following variables are calculated independent of accuracy of solution:
+/meanSolutionTime:				the mean solution time (in ms) of all solutions with solutionTime > 0
+/sdSolutionTime:				the standard deviation (in ms) of solution times of solutions with solutionTime > 0
+/meanExecutionTime:				the mean execution time (in ms) of all solutions with solutionTime > 0
+/sdExecutionTime:				the standard deviation (in ms) of all execution times of all completed solutions with solutionTime > 0
+
+Note: the following variables are calculated for solutions with values.problemScore > 0:
+/meanSolutionTimeCorrectSolution:	the mean solution time (in ms) of all solutions with solutionTime > 0
+/sdSolutionTimeCorrectSolution:		the standard deviation (in ms) of solution times of solutions with solutionTime > 0
+/meanExecutionTimeCorrectSolution:	the mean execution time (in ms) of all solutions with solutionTime > 0
+/sdExecutionTimeCorrectSolution:	the standard deviation (in ms) of all execution times of all completed solutions with solutionTime 
+
+<expressions>
+/ availableASlots = return (parameters.nASlots-values.aCount)
+/ availableBSlots = return (parameters.nBSlots-values.bCount)
+/ availableCSlots = return (parameters.nCSlots-values.cCount)
+/ vMaxA = if(values.aCount>0) return list.vpos.item(values.aCount - 1); else return null;
+/ vMaxB = if(values.bCount>0) return list.vpos.item(values.bCount - 1); else return null;
+/ vMaxC = if(values.cCount>0) return list.vpos.item(values.cCount - 1); else return null;
+/ vNextA = if(expressions.availableASlots>0) return list.vpos.item(values.aCount); else return null;
+/ vNextB = if(expressions.availableBSlots>0) return list.vpos.item(values.bCount); else return null;
+/ vNextC = if(expressions.availableCSlots>0) return list.vpos.item(values.cCount); else return null;
+
+/ topInA = if(parseFloat(values.rCurrentX)==parseFloat(parameters.h1) && parseFloat(values.rCurrentY)==parseFloat(expressions.vMaxA)) return "R";
+	else if(parseFloat(values.gCurrentX)==parseFloat(parameters.h1) && parseFloat(values.gCurrentY)==parseFloat(expressions.vMaxA)) return "G";
+	else if(parseFloat(values.bCurrentX)==parseFloat(parameters.h1) && parseFloat(values.bCurrentY)==parseFloat(expressions.vMaxA)) return "B";
+	else return "none";
+/ topInB = if(parseFloat(values.rCurrentX)==parseFloat(parameters.h2) && parseFloat(values.rCurrentY)==parseFloat(expressions.vMaxB)) return "R";
+	else if(parseFloat(values.gCurrentX)==parseFloat(parameters.h2) && parseFloat(values.gCurrentY)==parseFloat(expressions.vMaxB)) return "G";
+	else if(parseFloat(values.bCurrentX)==parseFloat(parameters.h2) && parseFloat(values.bCurrentY)==parseFloat(expressions.vMaxB)) return "B";
+	else return "none";
+/ topInC = if(parseFloat(values.rCurrentX)==parseFloat(parameters.h3) && parseFloat(values.rCurrentY)==parseFloat(expressions.vMaxC)) return "R";
+	else if(parseFloat(values.gCurrentX)==parseFloat(parameters.h3) && parseFloat(values.gCurrentY)==parseFloat(expressions.vMaxC)) return "G";
+	else if(parseFloat(values.bCurrentX)==parseFloat(parameters.h3) && parseFloat(values.bCurrentY)==parseFloat(expressions.vMaxC)) return "B";
+	else return "none";
+/ firstMoveTime = if(values.tFirstMove>0) return (values.tFirstMove-values.tRoundStart);
+	else return 0;
+/ solutionTime = if(values.tSolution>0) return (values.tSolution-values.tRoundStart);
+	else return 0;
+/ executionTime = if(expressions.solutionTime>0) return (expressions.solutionTime-expressions.firstMoveTime);
+	else return 0;
+/ excessMoves = return (values.subjectMoves-values.targetMoves)
+/ targetAchieved = return (parseFloat(values.rCurrentX)==parseFloat(values.rTargetX) && parseFloat(values.rCurrentY)==parseFloat(values.rTargetY)
+	&& parseFloat(values.gCurrentX)==parseFloat(values.gTargetX) && parseFloat(values.gCurrentY)==parseFloat(values.gTargetY)
+	&& parseFloat(values.bCurrentX)==parseFloat(values.bTargetX) && parseFloat(values.bCurrentY)==parseFloat(values.bTargetY));
+/ feedbackSwitch = if(values.subjectMoves<=values.targetMoves) return 0; else return 1;
+
+/ countRuleViolations = return (values.countRule1Violations + values.countRule2Violations)
+
+
+/ planningTime = if(expressions.solutionTime>0) return (expressions.solutionTime - expressions.executionTime); else return 0;
+
+/ meanSolutionTime = return list.solutionTimes.mean
+/ sdSolutionTime = return list.solutionTimes.standardDeviation
+/ meanExecutionTime = return list.executionTimes.mean
+/ sdExecutionTime = return list.executionTimes.standardDeviation
+
+/ meanPlanningTime  = return (expressions.meanSolutionTime - expressions.meanExecutionTime)
+
+/ meanSolutionTimeCorrectSolutions = return list.solutionTimesCorrectSolutions.mean
+/ sdSolutionTimeCorrectSolutions = return list.solutionTimesCorrectSolutions.standardDeviation
+/ meanExecutionTimeCorrectSolutions = return list.executionTimesCorrectSolutions.mean
+/ sdExecutionTimeCorrectSolutions = return list.executionTimesCorrectSolutions.standardDeviation
+/ meanPlanningTimeCorrectSolution = return (expressions.meanSolutionTimeCorrectSolutions - expressions.meanExecutionTimeCorrectSolutions)
+</expressions>
+
+**************************************************************************************************************
+**************************************************************************************************************
+	STIMULI
+**************************************************************************************************************
+**************************************************************************************************************
+see toweroflondon.iqjs (Note: toweroflondon.iqjs contains stimuli that contain language specific text)
+
+
+**************************************************************************************************************
+	Debug Stuff
+**************************************************************************************************************
+
+<text debug>
+/ items = ("Free (A): <%expressions.availableASlots%> | Free (B): <%expressions.availableBSlots%> | Free (C): <%expressions.availableCSlots%>
+Top (A): <%expressions.topInA%> | Top (B): <%expressions.topInB%> | Top (C): <%expressions.topInC%>
+Max (A): <%expressions.vMaxA%> | Max (B): <%expressions.vMaxB%> | Max (C): <%expressions.vMaxC%>
+Next (A): <%expressions.vNextA%> | Next (B): <%expressions.vNextB%> | Next (C): <%expressions.vNextC%>
+In: <%values.in%>")
+/ erase = false
+/ size = (40%,10%)
+/ position = (50%, 37%)
+/ vJustify = center
+</text>
+
+<text roundInfo>
+/ items = ("Problem Number: <%values.problemNumber%>
+Attempt Number: <%values.subjectAttempts%>
+Target Moves: <%values.targetMoves%>
+Subject Moves: <%values.subjectMoves%>
+Excess Moves: <%expressions.excessMoves%>
+First Move Time: <%expressions.firstMoveTime%>
+Solution Time: <%expressions.solutionTime%>
+Execution Time: <%expressions.executionTime%>
+Problem Score: <%values.problemScore%>
+Total Score: <%values.totalScore%>
+Performed Moves: <%values.moveString%>")
+/ erase = false
+/ size = (30%,30%)
+/ position = (1%,1%)
+/ hJustify = left
+/ hAlign = left
+/ vAlign = top
+</text>
+
+**************************************************************************************************************
+	Background
+**************************************************************************************************************
+
+<shape background>
+/ shape = rectangle
+/ color = black
+/ size = (100%, 100%)
+/ erase = false
+</shape>
+
+**************************************************************************************************************
+	Base
+**************************************************************************************************************
+
+<picture base>
+/ items = ("base.png")
+/ erase = false
+/ size = (90%, 25%)
+/ position = (50%,100%)
+/ hAlign = center
+/ vAlign = bottom
+</picture>
+
+**************************************************************************************************************
+	Pegs
+**************************************************************************************************************
+
+<picture apeg>
+/ items = pegs
+/ erase = false
+/ select = expressions.nASlots
+/ position = (20%,88%)
+/ size = (20%, 50%)
+/ vAlign = bottom
+/ dropTarget = true
+/ dropPosition = (parameters.h1, parameters.v1)
+</picture>
+<expressions>
+/ nASlots = return (parameters.nASlots - 1) //0-based selections
+</expressions>
+
+
+<picture bpeg>
+/ items = pegs
+/ erase = false
+/ select = expressions.nBSlots
+/ position = (50%, 88%)
+/ size = (20%, 50%)
+/ vAlign = bottom
+/ dropTarget = true
+/ dropPosition = (parameters.h2, parameters.v1)
+</picture>
+<expressions>
+/ nBSlots = return (parameters.nBSlots - 1) //0-based selections
+</expressions>
+
+<picture cpeg>
+/ items = pegs
+/ erase = false
+/ select = expressions.nCSlots
+/ position = (80%, 88%)
+/ size = (20%, 50%)
+/ vAlign = bottom
+/ dropTarget = true
+/ dropPosition = (parameters.h3, parameters.v1)
+</picture>
+<expressions>
+/ nCSlots = return (parameters.nCSlots - 1) //0-based selections
+</expressions>
+
+**************************************************************************************************************
+	Balls
+**************************************************************************************************************
+
+<picture r>
+/ items = ("r1.png")
+/ erase = false
+/ hPosition = values.rCurrentX
+/ vPosition = values.rCurrentY
+/ size = (15%, 15%)
+/ dropSource = true
+</picture>
+
+<picture g>
+/ items = ("g1.png")
+/ erase = false
+/ hPosition = values.gCurrentX
+/ vPosition = values.gCurrentY
+/ size = (15%, 15%)
+/ dropSource = true
+</picture>
+
+<picture b>
+/ items = ("b1.png")
+/ erase = false
+/ hPosition = values.bCurrentX
+/ vPosition = values.bCurrentY
+/ size = (15%, 15%)
+/ dropSource = true
+</picture>
+
+**************************************************************************************************************
+	Items (Problem Set)
+**************************************************************************************************************
+<picture targetstate>
+/ items = targetstateItems
+/ select = list.problemNumber.currentIndex
+/ erase = false
+/ size = (50%,30%)
+/ position = (50%,1%)
+/ vAlign = top
+</picture>
+
+**************************************************************************************************************
+**************************************************************************************************************
+	LISTS
+**************************************************************************************************************
+**************************************************************************************************************
+
+**************************************************************************************************************
+	Generic Position Lists
+**************************************************************************************************************
+
+<list vpos>
+/ items = (parameters.v1,parameters.v2,parameters.v3)
+/ selectionMode = sequence
+</list>
+
+<list hpos>
+/ items = (parameters.h1,parameters.h2,parameters.h3)
+/ selectionMode = sequence
+</list>
+
+**************************************************************************************************************
+	Summary Data Lists
+**************************************************************************************************************
+
+<list executionTimes>
+</list>
+
+<list solutionTimes>
+</list>
+
+<list executionTimesCorrectSolutions>
+</list>
+
+<list solutionTimesCorrectSolutions>
+</list>
+
+**************************************************************************************************************
+	Monkey Target Pegs
+**************************************************************************************************************
+
+<list monkeyPegs>
+/ items = ("apeg")
+/ selectionRate = always
+</list>
+
+**************************************************************************************************************
+**************************************************************************************************************
+	TRIALS 
+**************************************************************************************************************
+**************************************************************************************************************
+
+**************************************************************************************************************
+	Start Round / Get Problem
+**************************************************************************************************************
+
+<script>
+function resetRoundVariables(){
+	values.rCurrentX=parameters.rStartX;
+	values.rCurrentY=parameters.rStartY;
+	values.gCurrentX=parameters.gStartX;
+	values.gCurrentY=parameters.gStartY;
+	values.bCurrentX=parameters.bStartX;
+	values.bCurrentY=parameters.bStartY;
+	picture.r.x = parameters.rStartX;
+	picture.r.y = parameters.rStartY;
+	picture.g.x = parameters.gStartX;
+	picture.g.y = parameters.gStartY;
+	picture.b.x = parameters.bStartX;
+	picture.b.y = parameters.bStartY;
+
+	values.tRoundStart=0;
+	values.tFirstMove=0;
+	values.tSolution=0;
+	values.subjectMoves=0;
+	values.problemScore=0;
+	values.moveString="";
+	values.choiceCount=0;
+	values.ruleViolation = 0;
+}
+</script>
+
+
+<trial newRound>
+/ onTrialBegin = {
+	values.problemNumber=list.problemNumber.nextValue;
+	values.targetMoves=list.targetMoves.nextValue;
+	values.rTargetX=list.rTargetX.nextValue;
+	values.rTargetY=list.rTargetY.nextValue;
+	values.gTargetX=list.gTargetX.nextValue;
+	values.gTargetY=list.gTargetY.nextValue;
+	values.bTargetX=list.bTargetX.nextValue;
+	values.bTargetY=list.bTargetY.nextValue;
+	resetRoundVariables();
+	values.subjectAttempts=1;
+}
+/ stimulusFrames = [1=background,startMsg]
+/ validResponse = (anyResponse)
+/ trialDuration = parameters.interTrialInterval
+/ recordData = false
+/ branch = {
+	return trial.choice;
+}
+</trial>
+
+***************************************************************************************************************
+	Reset Round
+***************************************************************************************************************
+
+<trial resetRound>
+/ onTrialBegin = {
+	resetRoundVariables();
+	values.subjectAttempts++;
+	values.countFailedAttempts++;
+}
+/ stimulusFrames = [1=background,resetMsg]
+/ validResponse = (anyResponse)
+/ trialDuration = parameters.interTrialInterval
+/ recordData = false
+/ branch = {
+	return trial.choice;
+}
+</trial>
+
+***************************************************************************************************************
+	Select Object
+***************************************************************************************************************
+
+<trial choice>
+/ onTrialBegin = {
+	values.ruleViolation = 0;
+	values.aCount=0;
+	values.bCount=0;
+	values.cCount=0;
+
+	if (parseFloat(values.rCurrentX)==parseFloat(parameters.h1)) values.aCount++;
+	if (parseFloat(values.gCurrentX)==parseFloat(parameters.h1)) values.aCount++;
+	if (parseFloat(values.bCurrentX)==parseFloat(parameters.h1)) values.aCount++;
+	if (parseFloat(values.rCurrentX)==parseFloat(parameters.h2)) values.bCount++;
+	if (parseFloat(values.gCurrentX)==parseFloat(parameters.h2)) values.bCount++;
+	if (parseFloat(values.bCurrentX)==parseFloat(parameters.h2)) values.bCount++;
+	if (parseFloat(values.rCurrentX)==parseFloat(parameters.h3)) values.cCount++;
+	if (parseFloat(values.gCurrentX)==parseFloat(parameters.h3)) values.cCount++;
+	if (parseFloat(values.bCurrentX)==parseFloat(parameters.h3)) values.cCount++;
+
+	values.choiceCount++;
+	if (values.choiceCount==1) values.tRoundStart=script.elapsedTime;
+	values.tChoiceStart=script.elapsedTime;
+
+	//determine drop positions on the pegs:
+	values.aDropTarget = expressions.availableASlots;
+	values.bDropTarget = expressions.availableBSlots;
+	values.cDropTarget = expressions.availableCSlots;
+	picture.apeg.dropY = expressions.vNextA;
+	picture.bpeg.dropY = expressions.vNextB;
+	picture.cpeg.dropY = expressions.vNextC;
+
+	list.monkeyPegs.clearItems();
+	if (values.aDropTarget) list.monkeyPegs.appendItem("apeg");
+	if (values.bDropTarget) list.monkeyPegs.appendItem("bpeg");
+	if (values.cDropTarget) list.monkeyPegs.appendItem("cpeg");
+
+	//preserve the starting positions of the balls in case of a violation
+	values.gbX = picture.g.x;
+	values.gbY = picture.g.y;
+	values.rbX = picture.r.x;
+	values.rbY = picture.r.y;
+	values.bbX = picture.b.x;
+	values.bbY = picture.b.y;
+	values.debug1 = "";
+}
+/ stimulusFrames = [1=background,problemInfo,moveInfo,targetstate,base,apeg,bpeg,cpeg,
+	r,g,b,resetRound,nextRound]
+/ inputDevice = dragdrop
+/ validResponse = (apeg,bpeg,cpeg,resetRound,nextRound)
+/ monkeyResponse = (resetRound, nextRound, list.monkeyPegs.nextValue, list.monkeyPegs.nextValue)
+/ responseMessage = (resetRound,clickresetRound,250)
+/ responseMessage = (nextRound,clickNextRound,250)
+/ recordData = true
+/ onTrialEnd = {
+	var lastDroppedBall = this.lastDropSource;
+	var lastPeg = subString(this.response,0,1);
+
+	//check for rule violations:
+	if (contains(this.response,"peg")){
+		//check for rule1Violations: only move the top ball
+		if (!(toLower(expressions.topInA) == lastDroppedBall || toLower(expressions.topInB) == lastDroppedBall || toLower(expressions.topInC) == lastDroppedBall)){
+			values.ruleViolation = 1;
+			values.countRule1Violations++;
+		}
+
+		//check for rule2Violation: only move ball to a peg that has room
+		if (!values[lastPeg + "DropTarget"]){//tried to move ball to a peg without enough room
+			values.ruleViolation = 1;
+			values.countRule2Violations++;
+		}
+	}
+
+	if (!values.ruleViolation){//only if no rule violation
+		values.tChoiceEnd=script.elapsedTime;
+		if (this.response != "resetRound" && this.response != "nextRound") {
+			//adjust positions of the (moved) balls
+			values.rCurrentX = picture.r.x;
+			values.rCurrentY = picture.r.y;
+			values.gCurrentX = picture.g.x;
+			values.gCurrentY = picture.g.y;
+			values.bCurrentX = picture.b.x;
+			values.bCurrentY = picture.b.y;
+
+			if (values.subjectMoves==0) {
+				values.tFirstMove=values.tChoiceEnd - this.lastDropLatency;
+			}
+			values.subjectMoves++;
+			values.moveString=concat(values.moveString, this.lastDropTarget);
+		}
+	} else {
+		//return ball back to its origin
+		picture[lastDroppedBall].x = values[lastDroppedBall + "bX"];
+		picture[lastDroppedBall].y = values[lastDroppedBall + "bY"];
+	}
+}
+/ branch = {
+	if (this.response=="resetRound" ){
+		if (values.subjectAttempts < parameters.maxAttempts) {
+			return trial.resetRound;
+		} else {
+			return trial.stopBlock;
+		}
+	} else if (this.response == "nextRound") {
+		return trial.stopBlock;
+	} else if (expressions.targetAchieved) {
+		return trial.feedback;
+	} else {
+		return this;
+	}
+}
+</trial>
+
+*******************************************************
+	Start Trial
+******************************************************
+<trial startLSL>
+/ stimulusFrames = [1 = lsl_start]
+/ trialDuration = 20
+/ recordData = false
+</trial>
+
+***************************************************************************************************************
+	Feedback Trial
+***************************************************************************************************************
+
+<trial feedback>
+/ onTrialBegin = {
+	values.tSolution = script.elapsedTime;
+	list.solutionTimes.appendItem(expressions.solutionTime);
+	list.executionTimes.appendItem(expressions.executionTime);
+
+	if (expressions.excessMoves == 0 ){
+		values.problemScore = parameters.maxAttempts - (values.subjectAttempts - 1)
+	}
+	values.totalScore = values.totalScore + values.problemScore;
+
+	if (values.problemScore > 0) {
+		list.solutionTimesCorrectSolutions.appendItem(expressions.solutionTime);
+		list.executionTimesCorrectSolutions.appendItem(expressions.executionTime);
+	}
+
+}
+/ stimulusFrames = [1=background,problemInfo,moveInfo,targetstate,base,apeg,bpeg,cpeg,r,g,b,feedbackMsg]
+/ validResponse = (anyResponse)
+/ trialDuration = parameters.feedbackDuration
+/ branch = {
+	if (expressions.excessMoves > 0 && values.subjectAttempts < parameters.maxAttempts ){
+		return trial.resetRound;
+	} else {
+		return trial.stopBlock;
+	}
+}
+/ recordData = true
+</trial>
+
+***************************************************************************************************************
+	Stop block if all practice / test items have been completed.
+***************************************************************************************************************
+
+<trial stopBlock>
+/ onTrialBegin = {
+	if (script.currentBlock == block.practice && list.problemNumber.selectedCount == parameters.nPracticeProblems)
+		values.stopBlock = 1;
+	if (list.problemNumber.unselectedCount==0)
+	values.stopBlock = 1;
+
+	if (values.problemScore == 0){
+		values.countFailedAttempts++;
+	}
+}
+/ validResponse = (anyResponse)
+/ trialDuration = 0
+/ branch = {
+	return trial.newRound;
+}
+/ recordData = false
+</trial>
+
+<trial finish>
+/ inputDevice = mouse
+/ stimulusFrames = [1 = clearScreen, finish,lsl_end, finishInstruct, exitButton]
+/ validResponse = (exitButton)
+/ recordData = false
+</trial>
+
+**************************************************************************************************************
+**************************************************************************************************************
+	BLOCKS
+**************************************************************************************************************
+**************************************************************************************************************
+<block startMarker>
+/ trials = [1=startLSL]
+
+</block>
+
+
+<block practice>
+/ preInstructions = (intro, practice)
+/ onBlockEnd = {
+	values.stopBlock=0
+}
+/ stop = {
+	return (values.stopBlock==1)
+}
+/ trials = [1=newRound]
+</block>
+
+<block test>
+/ preInstructions = (test)
+/ onBlockBegin = {
+	values.totalScore=0;
+	values.countRule1Violations = 0;
+	values.countRule2Violations = 0;
+	values.countFailedAttempts = 0;
+}
+/ stop = {
+	return (values.stopBlock==1);
+}
+/ trials = [1=newRound]
+</block>
+
+<block finish>
+/ trials = [
+	1 = finish;
+]
+</block>
+
+**************************************************************************************************************
+**************************************************************************************************************
+	EXPERIMENT 
+**************************************************************************************************************
+**************************************************************************************************************
+
+<expt towerOfLondon>
+/ blocks = [
+	1=startMarker;
+	2=practice; 
+	3=test;
+	4=finish;
+]
+</expt>
+
+
+**************************************************************************************************************
+												End of File
+**************************************************************************************************************
