@@ -10,12 +10,114 @@ def extract_marker(row):
 
 
 def main():
-    data, _ = pyxdf.load_xdf("data.xdf") # Change path as needed
+    data, _ = pyxdf.load_xdf("data/data.xdf") # Replace with your file path
 
-    # Change stream indices as needed
-    gsr_stream = data[2]
-    marker_stream = data[1]
-    ecg_stream = data[0]  
+    def _get_info_field(info, key):
+        if not info or key not in info:
+            return ""
+        v = info.get(key)
+        # handle common pyxdf shapes (dict with '#text' or 'name')
+        if isinstance(v, dict):
+            for candidate in ("#text", "name", "value"):
+                if candidate in v:
+                    return str(v[candidate])
+            # else join nested values
+            try:
+                return " ".join(str(x) for x in v.values())
+            except Exception:
+                return str(v)
+        return str(v)
+
+    def detect_stream_indices(streams):
+        # heuristics: look for marker/event stream (string samples or name/type contains 'marker'/'event')
+        marker_idx = None
+        ecg_idx = None
+        gsr_idx = None
+
+        for i, s in enumerate(streams):
+            info = s.get("info", {})
+            name = _get_info_field(info, "name").lower()
+            stype = _get_info_field(info, "type").lower()
+            desc = _get_info_field(info, "desc").lower()
+
+            # sample inspection
+            ts = s.get("time_series", [])
+            first = None
+            if isinstance(ts, (list, np.ndarray)) and len(ts) > 0:
+                first = ts[0]
+
+            # marker: name/type/desc hints or first sample is string-like
+            if marker_idx is None:
+                if any(k in name for k in ("marker", "event")) or any(k in stype for k in ("marker", "event")) or any(k in desc for k in ("marker", "event")):
+                    marker_idx = i
+                elif isinstance(first, (str,)):
+                    marker_idx = i
+
+            # ecg: name/type hints
+            if ecg_idx is None and (any(k in name for k in ("ecg", "ekg")) or any(k in stype for k in ("ecg", "ekg")) or any(k in desc for k in ("ecg", "ekg"))):
+                ecg_idx = i
+
+            # gsr: name/type hints
+            if gsr_idx is None and (any(k in name for k in ("gsr", "galvanic", "eda", "electrodermal")) or any(k in stype for k in ("gsr", "galvanic", "eda", "electrodermal")) or any(k in desc for k in ("gsr", "galvanic", "eda", "electrodermal"))):
+                gsr_idx = i
+
+        # fallback: if marker not found, try to detect by non-numeric samples
+        if marker_idx is None:
+            for i, s in enumerate(streams):
+                ts = s.get("time_series", [])
+                if isinstance(ts, (list, np.ndarray)) and len(ts) > 0:
+                    first = ts[0]
+                    if isinstance(first, (str,)):
+                        marker_idx = i
+                        break
+
+        # fallback for numeric streams: choose remaining numeric streams for ecg/gsr
+        numeric_idxs = [i for i, s in enumerate(streams) if not (isinstance(s.get("time_series", []), (list, np.ndarray)) and len(s.get("time_series", []))>0 and isinstance(s.get("time_series", [])[0], str))]
+        # remove marker if present
+        if marker_idx in numeric_idxs:
+            numeric_idxs.remove(marker_idx)
+
+        # if ecg/gsr still missing, try by name hints in remaining numeric streams
+        if ecg_idx is None:
+            for i in numeric_idxs:
+                info = streams[i].get("info", {})
+                name = _get_info_field(info, "name").lower()
+                if any(k in name for k in ("ecg", "ekg")):
+                    ecg_idx = i
+                    break
+
+        if gsr_idx is None:
+            for i in numeric_idxs:
+                info = streams[i].get("info", {})
+                name = _get_info_field(info, "name").lower()
+                if any(k in name for k in ("gsr", "galvanic", "eda", "electrodermal")):
+                    gsr_idx = i
+                    break
+
+        # final fallback: assign by order
+        rem = [i for i in range(len(streams)) if i not in (marker_idx, ecg_idx, gsr_idx)]
+        # try to assign ecg then gsr from remaining numeric or any
+        if ecg_idx is None:
+            if rem:
+                ecg_idx = rem.pop(0)
+        if gsr_idx is None:
+            if rem:
+                gsr_idx = rem.pop(0)
+
+        # last resort: use classic 0,1,2 mapping if available
+        if ecg_idx is None and len(streams) > 0:
+            ecg_idx = 0
+        if marker_idx is None and len(streams) > 1:
+            marker_idx = 1
+        if gsr_idx is None and len(streams) > 2:
+            gsr_idx = 2
+
+        return {"ecg": ecg_idx, "gsr": gsr_idx, "marker": marker_idx}
+
+    idxs = detect_stream_indices(data)
+    ecg_stream = data[idxs["ecg"]] if idxs.get("ecg") is not None else {}
+    gsr_stream = data[idxs["gsr"]] if idxs.get("gsr") is not None else {}
+    marker_stream = data[idxs["marker"]] if idxs.get("marker") is not None else {}
 
     # GSR data
     gsr_ts = np.asarray(gsr_stream["time_stamps"], dtype=float)
